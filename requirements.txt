@@ -1,0 +1,7 @@
+streamlit>=1.42
+pandas
+numpy
+plotly
+scikit-learn
+statsmodels
+kagglehub
