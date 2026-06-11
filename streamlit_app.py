@@ -439,34 +439,109 @@ with tab_pred:
         "Propuesta de valor: tamizaje inmediato con datos de consulta general. "
         "Resultado orientativo; no sustituye una valoración médica."
     )
+    # Opciones en español sencillo -> valor que entiende el modelo
+    OPC_SEXO = {"Hombre": "M", "Mujer": "F"}
+    OPC_DOLOR = {
+        "No siente dolor en el pecho": "ASY",
+        "Dolor que no parece del corazón": "NAP",
+        "Dolor de pecho leve o poco típico": "ATA",
+        "Dolor de pecho clásico (opresión al esforzarse)": "TA",
+    }
+    OPC_ECG = {
+        "Normal": "Normal",
+        "Con alteraciones leves": "ST",
+        "Con signos de corazón crecido": "LVH",
+    }
+    OPC_ANGINA = {"No": "N", "Sí": "Y"}
+    OPC_PENDIENTE = {
+        "Sube (buena señal)": "Up",
+        "Se mantiene plana (señal de alerta)": "Flat",
+        "Baja (señal de mayor riesgo)": "Down",
+    }
+
     with st.form("form_pred"):
         f1c, f2c, f3c = st.columns(3)
         with f1c:
-            p_age = st.slider("Edad", 20, 90, 54)
-            p_sex = st.selectbox("Sexo", ["M", "F"])
-            p_cp = st.selectbox(
-                "Tipo de dolor de pecho", ["ASY", "NAP", "ATA", "TA"],
-                help="ASY = asintomático, ATA = angina atípica, NAP = no anginoso, TA = angina típica",
+            p_age = st.slider(
+                "Edad", 20, 90, 54,
+                help="Edad de la persona en años cumplidos.",
             )
-            p_bp = st.slider("Presión en reposo (mmHg)", 80, 200, 130)
+            p_sex = st.selectbox(
+                "Sexo", list(OPC_SEXO),
+                help="Sexo biológico de la persona. En los datos, los hombres "
+                     "presentan una tasa de enfermedad cardiaca más alta.",
+            )
+            p_cp = st.selectbox(
+                "¿Cómo es el dolor de pecho?", list(OPC_DOLOR),
+                help="Describe qué siente la persona en el pecho. Dato importante: "
+                     "**no sentir dolor NO significa estar sano**; en este estudio, "
+                     "la mayoría de los enfermos no tenía dolor (enfermedad 'silenciosa').",
+            )
+            p_bp = st.slider(
+                "Presión arterial en reposo", 80, 200, 130,
+                help="Es el número 'alto' cuando te toman la presión, medido en reposo "
+                     "(mmHg). Lo normal ronda 120; arriba de 140 se considera presión alta.",
+            )
         with f2c:
-            p_chol = st.slider("Colesterol (mg/dl)", 85, 600, 240)
-            p_fbs = st.selectbox("Glucosa en ayunas > 120 mg/dl", ["No", "Sí"])
-            p_ecg = st.selectbox("ECG en reposo", ["Normal", "ST", "LVH"])
-            p_hr = st.slider("Frecuencia cardiaca máxima", 60, 210, 140)
+            p_chol = st.slider(
+                "Colesterol en sangre", 85, 600, 240,
+                help="Cantidad de colesterol total en la sangre (mg/dl), medida con un "
+                     "análisis de laboratorio. Menos de 200 es deseable; arriba de 240 es alto.",
+            )
+            p_fbs = st.selectbox(
+                "¿Azúcar alta en ayunas?", ["No", "Sí"],
+                help="Indica si el nivel de azúcar (glucosa) en la sangre, medido sin haber "
+                     "comido, supera 120 mg/dl. Un valor alto puede señalar diabetes o prediabetes.",
+            )
+            p_ecg = st.selectbox(
+                "Resultado del electrocardiograma", list(OPC_ECG),
+                help="El electrocardiograma (ECG) registra la actividad eléctrica del corazón "
+                     "con sensores en el pecho. Aquí va el resultado que reportó el médico: "
+                     "normal, con alteraciones leves, o con signos de que el corazón ha crecido "
+                     "por trabajar de más.",
+            )
+            p_hr = st.slider(
+                "Pulso máximo alcanzado en ejercicio", 60, 210, 140,
+                help="Las pulsaciones por minuto más altas que alcanzó la persona durante una "
+                     "prueba de esfuerzo (caminar/correr en una banda). Un corazón sano suele "
+                     "alcanzar pulsos más altos; como referencia, el máximo teórico es 220 menos la edad.",
+            )
         with f3c:
-            p_ang = st.selectbox("¿Angina con ejercicio?", ["N", "Y"])
-            p_old = st.slider("Oldpeak (depresión ST)", -2.0, 6.5, 1.0, 0.1)
-            p_slope = st.selectbox("Pendiente ST", ["Up", "Flat", "Down"])
-            modelo_pred = st.selectbox("Modelo a usar", list(resultados.keys()), index=1)
+            p_ang = st.selectbox(
+                "¿Dolor de pecho al hacer ejercicio?", list(OPC_ANGINA),
+                help="Indica si a la persona le duele u oprime el pecho cuando hace esfuerzo "
+                     "físico (subir escaleras, caminar rápido). Ese dolor se llama 'angina' y "
+                     "sugiere que al corazón le falta oxígeno cuando trabaja más.",
+            )
+            p_old = st.slider(
+                "Descenso en el electrocardiograma con esfuerzo", -2.0, 6.5, 1.0, 0.1,
+                help="Durante la prueba de esfuerzo, el médico observa si una parte de la señal "
+                     "del electrocardiograma 'baja' respecto al reposo (se llama depresión del "
+                     "segmento ST u 'Oldpeak'). Entre más grande el número, más señal de que el "
+                     "corazón sufre con el esfuerzo. 0 es lo normal.",
+            )
+            p_slope = st.selectbox(
+                "Comportamiento de la señal del corazón al esforzarse", list(OPC_PENDIENTE),
+                help="En la prueba de esfuerzo, la señal del electrocardiograma puede subir, "
+                     "mantenerse plana o bajar. Que suba es lo esperado en un corazón sano; "
+                     "que se quede plana o baje es una de las señales de riesgo más fuertes "
+                     "de todo este estudio.",
+            )
+            modelo_pred = st.selectbox(
+                "Modelo de predicción a usar", list(resultados.keys()), index=1,
+                help="Algoritmo de machine learning que hará el cálculo. Random Forest es el "
+                     "más preciso; Regresión Logística es el más fácil de interpretar.",
+            )
         enviado = st.form_submit_button("🫀 Calcular riesgo", width="stretch")
 
     if enviado:
         paciente = pd.DataFrame([{
-            "Age": p_age, "Sex": p_sex, "ChestPainType": p_cp, "RestingBP": p_bp,
-            "Cholesterol": p_chol, "FastingBS": 1 if p_fbs == "Sí" else 0,
-            "RestingECG": p_ecg, "MaxHR": p_hr, "ExerciseAngina": p_ang,
-            "Oldpeak": p_old, "ST_Slope": p_slope,
+            "Age": p_age, "Sex": OPC_SEXO[p_sex], "ChestPainType": OPC_DOLOR[p_cp],
+            "RestingBP": p_bp, "Cholesterol": p_chol,
+            "FastingBS": 1 if p_fbs == "Sí" else 0,
+            "RestingECG": OPC_ECG[p_ecg], "MaxHR": p_hr,
+            "ExerciseAngina": OPC_ANGINA[p_ang],
+            "Oldpeak": p_old, "ST_Slope": OPC_PENDIENTE[p_slope],
         }])
         proba = resultados[modelo_pred]["pipe"].predict_proba(paciente)[0, 1]
 
